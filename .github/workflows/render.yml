@@ -1,0 +1,48 @@
+name: Render Finance Video
+
+on:
+  workflow_dispatch:
+    inputs:
+      quality:
+        description: "Resolution"
+        type: choice
+        default: "4k"
+        options: ["4k", "hd"]
+  push:
+    branches: [main]
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Chrome dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libnss3 libdbus-1-3 libatk1.0-0 libasound2t64 \
+            libxrandr2 libxkbcommon-x11-0 libxfixes3 libxcomposite1 libxdamage1 libgbm-dev
+
+      - run: npm install
+
+      - name: Render
+        run: |
+          if [ "${{ github.event.inputs.quality }}" = "hd" ]; then
+            npm run render
+          else
+            npm run render:4k
+          fi
+
+      - name: Thumbnail
+        run: npm run still
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: finance-accounting-video
+          path: out/
